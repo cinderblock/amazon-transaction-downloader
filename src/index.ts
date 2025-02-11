@@ -20,7 +20,6 @@ async function main() {
   const sessionDirs = ['Default/Sessions', 'Default/Session Storage'];
 
   // Delete saved sessions
-  // TODO: Is this redundant with the --hide-crash-restore-bubble?
   await Promise.all(sessionDirs.map(dir => rm(join(userDataDir, dir), { recursive: true, force: true })));
 
   // Launch the browser and open a new blank page
@@ -28,15 +27,8 @@ async function main() {
     executablePath,
     headless,
     userDataDir,
-
-    // Don't lock the viewport size (to something other than the window size)
     defaultViewport: null,
-
-    args: [
-      '--window-size=1920,1080',
-      // Prevent "Restore session" dialog
-      '--hide-crash-restore-bubble',
-    ],
+    args: ['--window-size=1920,1080', '--hide-crash-restore-bubble'],
   });
 
   // Get first tab
@@ -46,47 +38,39 @@ async function main() {
     console.error('Page error', error);
   });
 
-  await page.goto(transactionUrl);
+  await page.goto(transactionUrl, { waitUntil: 'networkidle2' });
 
   // Wait for transactions to load
-  await page.waitForSelector('.apx-transaction-date-container', { timeout: 3000 });
+  await page.waitForSelector('.apx-transaction-date-container', { timeout: 10000 });
 
-  const transactions: Transaction[] = [];
+  // Extract transactions using page.evaluate
+  const transactions: Transaction[] = await page.evaluate(() => {
+    const transactionElements = document.querySelectorAll('.apx-transactions-line-item-component-container');
+    const extractedTransactions: Transaction[] = [];
 
-  // Get all transaction date containers
-  const dateContainers = await page.$$('.apx-transaction-date-container');
+    transactionElements.forEach(container => {
+      const dateElem = container.closest('.apx-transaction-date-container')?.querySelector('span');
+      const date = dateElem?.textContent?.trim() ?? '';
 
-  for (const dateContainer of dateContainers) {
-    // Get the date
-    const date = await dateContainer.$eval('span', el => el.textContent?.trim() || '');
+      const amountElem = container.querySelector('.a-text-right .a-size-base-plus');
+      const amount = amountElem?.textContent?.trim() ?? '';
 
-    // Get the next sibling element(s) after the date container
-    const transactionRows = await dateContainer.evaluateHandle(el => el.nextElementSibling);
+      const paymentMethodElem = container.querySelector('.a-row .a-color-secondary');
+      let paymentMethod = paymentMethodElem?.textContent?.trim().split('•')[0].trim() ?? '';
 
-    // Find all transaction containers within this sibling
-    const containers = await transactionRows.$$('.apx-transactions-line-item-component-container');
+      const orderNumberElem = container.querySelector('.a-column a');
+      const orderNumber = orderNumberElem?.textContent?.trim() ?? '';
 
-    for (const container of containers) {
-      const amount = await container.$eval('.a-text-right span.a-size-base-plus', el => el.textContent?.trim() || '');
-
-      // Get payment method - it's in a div with class a-row, containing payment info
-      const paymentMethod = await container.$eval('.a-row', el => {
-        const text = el.textContent?.trim() || '';
-        console.log('Payment row text:', text); // Debug log
-        return text;
-      });
-
-      // Get order number - it's in a link within the first column
-      const orderNumber = await container.$eval('.a-column', el => el.textContent?.trim() || '');
-
-      transactions.push({
+      extractedTransactions.push({
         date,
         amount,
         paymentMethod,
         orderNumber,
       });
-    }
-  }
+    });
+
+    return extractedTransactions;
+  });
 
   console.log(transactions);
 
