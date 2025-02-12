@@ -19,10 +19,8 @@ interface Transaction {
 }
 
 async function main() {
-  const sessionDirs = ['Default/Sessions', 'Default/Session Storage'];
-
   // Delete saved sessions
-  await Promise.all(sessionDirs.map(dir => rm(join(userDataDir, dir), { recursive: true, force: true })));
+  // await Promise.all(['Sessions', 'Session Storage'].map(dir => rm(join(userDataDir, 'Default', dir), { recursive: true, force: true })));
 
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
