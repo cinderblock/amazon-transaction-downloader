@@ -40,28 +40,33 @@ async function main() {
 
   await page.goto(transactionUrl, { waitUntil: 'networkidle2' });
 
-  // Wait for transactions to load
+  // Wait for transactions to load (or login to finish)
   await page.waitForSelector('.apx-transaction-date-container', { timeout: 10000 });
 
-  // Extract transactions using page.evaluate
-  const transactions: Transaction[] = await page.evaluate(() => {
+  // TODO: If there is a login prompt, restart without headless
+
+  const transactions = await page.evaluate(() => {
     const transactionElements = document.querySelectorAll('.apx-transactions-line-item-component-container');
-    const extractedTransactions: Transaction[] = [];
+    const transactions: Transaction[] = [];
 
     transactionElements.forEach(container => {
-      const dateElem = container.closest('.apx-transaction-date-container')?.querySelector('span');
-      const date = dateElem?.textContent?.trim() ?? '';
+      // Get payment method - keep the full card info including last 4 digits
+      const paymentMethodElem = container.querySelector('.a-row .a-text-bold');
+      const paymentMethod = paymentMethodElem?.textContent?.trim() ?? '';
 
+      // Get amount from the right-aligned span
       const amountElem = container.querySelector('.a-text-right .a-size-base-plus');
       const amount = amountElem?.textContent?.trim() ?? '';
 
-      const paymentMethodElem = container.querySelector('.a-row .a-color-secondary');
-      let paymentMethod = paymentMethodElem?.textContent?.trim().split('•')[0].trim() ?? '';
-
-      const orderNumberElem = container.querySelector('.a-column a');
+      // Get order number from the link
+      const orderNumberElem = container.querySelector('.a-row a');
       const orderNumber = orderNumberElem?.textContent?.trim() ?? '';
 
-      extractedTransactions.push({
+      // Get date - look for the date specifically
+      const dateElem = container.querySelector('.a-column:first-child .a-color-secondary');
+      const date = dateElem?.textContent?.trim() ?? '';
+
+      transactions.push({
         date,
         amount,
         paymentMethod,
@@ -69,10 +74,13 @@ async function main() {
       });
     });
 
-    return extractedTransactions;
+    return transactions;
   });
 
-  console.log(transactions);
+  console.log('Transactions:');
+  for (const transaction of transactions) {
+    console.log(Object.values(transaction).join(', '));
+  }
 
   await browser.close();
 }
