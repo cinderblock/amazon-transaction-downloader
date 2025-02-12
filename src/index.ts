@@ -41,7 +41,7 @@ async function main() {
   await page.goto(transactionUrl, { waitUntil: 'load' });
 
   // Wait for transactions to load (or login to finish)
-  await page.waitForSelector('.apx-transaction-date-container', { timeout: 10000 });
+  await page.waitForSelector('.apx-transaction-date-container', { timeout: 15000 });
 
   // TODO: If there is a login prompt, restart without headless, if necessary
 
