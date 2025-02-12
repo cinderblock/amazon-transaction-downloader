@@ -14,7 +14,7 @@ interface Transaction {
   amount: string;
   paymentMethod: string;
   orderNumber: string;
-  marketplace: string;
+  merchant: string;
   status: string;
 }
 
@@ -141,9 +141,9 @@ async function main() {
             if (!status) throw new Error('Invalid status');
 
             const orderNumber = transactionElement.children[++i]?.children[0]?.children[0]?.children[0]?.textContent;
-            const marketplace = transactionElement.children[++i]?.children[0]?.children[0]?.textContent;
+            const merchant = transactionElement.children[++i]?.children[0]?.children[0]?.textContent;
 
-            if (!paymentMethod || !amount || !orderNumber || !marketplace) {
+            if (!paymentMethod || !amount || !orderNumber || !merchant) {
               throw new Error('Invalid transaction');
             }
 
@@ -152,7 +152,7 @@ async function main() {
               amount,
               paymentMethod,
               orderNumber,
-              marketplace,
+              merchant,
               status,
             });
           }
