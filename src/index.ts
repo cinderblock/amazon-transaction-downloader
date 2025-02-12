@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 
 const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const headless = false;
+const headless = true;
 const userDataDir = 'user-data';
 
 const transactionUrl = 'https://www.amazon.com/cpe/yourpayments/transactions';
@@ -28,7 +28,7 @@ async function main() {
     headless,
     userDataDir,
     defaultViewport: null,
-    args: ['--window-size=1920,1080', '--hide-crash-restore-bubble'],
+    args: ['--hide-crash-restore-bubble'],
   });
 
   // Get first tab
