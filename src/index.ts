@@ -14,6 +14,8 @@ interface Transaction {
   amount: string;
   paymentMethod: string;
   orderNumber: string;
+  marketplace: string;
+  status: string;
 }
 
 async function main() {
@@ -43,36 +45,124 @@ async function main() {
   // Wait for transactions to load (or login to finish)
   await page.waitForSelector('.apx-transaction-date-container', { timeout: 10000 });
 
-  // TODO: If there is a login prompt, restart without headless
+  // TODO: If there is a login prompt, restart without headless, if necessary
+
+  // Simplified Document Tree
+  // ...
+  // div
+  //   div.apx-transactions-sleeve-header-container
+  //     div (only-child)
+  //       span: "Completed" or "In Progress" (only-child)
+  //   div (.a-box.a-spacing-base) (only-child)
+  //     div (.a-box-inner.a-padding-none) (only-child)
+  //       div.apx-transaction-date-container
+  //         span: date (only-child)
+  //       div.pmts-portal-component
+  //         div.apx-transactions-line-item-component-container
+  //           div
+  //             div
+  //               span: Payment Method (only-child)
+  //             div
+  //               span: Amount (only-child)
+  //           div (only if status is "In Progress")
+  //             div
+  //               span: Status (only-child)
+  //           div
+  //             div
+  //               div
+  //                 a: Order Number (only-child)
+  //           div
+  //             div
+  //               div
+  //                 span: Marketplace (only-child)
+  //         div (transaction separator)
+  //           hr
+  //         div.apx-transactions-line-item-component-container (multiple transactions in one day)
+  //           ...
+  //       div.apx-transaction-date-container
+  //         ...
+  //       div.pmts-portal-component
+  //         ...
+  //       div.apx-transaction-date-container
+  //         ...
+  //       div.pmts-portal-component
+  //         ...
+  // div
+  //   div.apx-transactions-sleeve-header-container (repeated for each category)
 
   const transactions = await page.evaluate(() => {
-    const transactionElements = document.querySelectorAll('.apx-transactions-line-item-component-container');
     const transactions: Transaction[] = [];
 
-    transactionElements.forEach(container => {
-      // Get payment method - keep the full card info including last 4 digits
-      const paymentMethodElem = container.querySelector('.a-row .a-text-bold');
-      const paymentMethod = paymentMethodElem?.textContent?.trim() ?? '';
+    const categoryHeaders = document.querySelectorAll('.apx-transactions-sleeve-header-container');
 
-      // Get amount from the right-aligned span
-      const amountElem = container.querySelector('.a-text-right .a-size-base-plus');
-      const amount = amountElem?.textContent?.trim() ?? '';
+    for (const categoryHeader of categoryHeaders) {
+      const category = categoryHeader.children[0]?.children[0]?.textContent;
 
-      // Get order number from the link
-      const orderNumberElem = container.querySelector('.a-row a');
-      const orderNumber = orderNumberElem?.textContent?.trim() ?? '';
+      if (category !== 'Completed' && category !== 'In Progress') throw new Error('Invalid status');
 
-      // Get date - look for the date specifically
-      const dateElem = container.querySelector('.a-column:first-child .a-color-secondary');
-      const date = dateElem?.textContent?.trim() ?? '';
+      const groupParentElement = categoryHeader.parentElement;
+      if (!groupParentElement) throw new Error('Unexpected state');
 
-      transactions.push({
-        date,
-        amount,
-        paymentMethod,
-        orderNumber,
-      });
-    });
+      let date: string | null = null;
+
+      for (const dateOrTransactions of groupParentElement.children[1]?.children[0]?.children) {
+        if (date === null) {
+          // expect date
+          if (!dateOrTransactions.classList.contains('apx-transaction-date-container')) {
+            throw new Error('Unexpected state');
+          }
+
+          date = dateOrTransactions.children[0].textContent;
+          if (!date) {
+            throw new Error('Invalid date');
+          }
+        } else {
+          // expect transactions
+          if (!dateOrTransactions.classList.contains('pmts-portal-component')) {
+            throw new Error('Unexpected state');
+          }
+
+          const transactionElements = dateOrTransactions.children;
+
+          for (const transactionElement of transactionElements) {
+            if (!transactionElement.classList.contains('apx-transactions-line-item-component-container')) continue;
+
+            let i = 0;
+
+            const paymentMethod = transactionElement.children[i]?.children[0]?.children[0]?.textContent;
+            const amount = transactionElement.children[i]?.children[1]?.children[0]?.textContent;
+
+            let status;
+            if (category === 'Completed') {
+              status = 'Completed';
+            } else {
+              // In Progress transactions have an extra status element
+              status = transactionElement.children[++i]?.children[0]?.textContent;
+            }
+
+            if (!status) throw new Error('Invalid status');
+
+            const orderNumber = transactionElement.children[++i]?.children[0]?.children[0]?.children[0]?.textContent;
+            const marketplace = transactionElement.children[++i]?.children[0]?.children[0]?.textContent;
+
+            if (!paymentMethod || !amount || !orderNumber || !marketplace) {
+              throw new Error('Invalid transaction');
+            }
+
+            transactions.push({
+              date,
+              amount,
+              paymentMethod,
+              orderNumber,
+              marketplace,
+              status,
+            });
+          }
+
+          date = null;
+        }
+      }
+    }
 
     return transactions;
   });
