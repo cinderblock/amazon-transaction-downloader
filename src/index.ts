@@ -170,7 +170,7 @@ async function main() {
     console.log(Object.values(transaction).join(', '));
   }
 
-  await browser.close();
+  if (headless) await browser.close();
 }
 
 if (esMain(import.meta)) {
