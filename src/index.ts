@@ -165,7 +165,6 @@ async function main() {
     return transactions;
   });
 
-  console.log('Transactions:');
   for (const transaction of transactions) {
     console.log(Object.values(transaction).join(', '));
   }
