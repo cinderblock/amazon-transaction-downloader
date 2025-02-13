@@ -1,6 +1,4 @@
 import esMain from 'es-main';
-import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { getTransactions, Transaction } from './getTransactions.js';
 import { printOrder } from './createPDF.js';
@@ -30,9 +28,6 @@ function filterMatches({ amount, date }: Transaction, unknownTransactions: { amo
 }
 
 async function main(unknownTransactions: { amount: string; date: string | Date }[]) {
-  // Delete saved sessions
-  // await Promise.all(['Sessions', 'Session Storage'].map(dir => rm(join(userDataDir, 'Default', dir), { recursive: true, force: true })));
-
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
     executablePath,
