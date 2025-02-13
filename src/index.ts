@@ -18,13 +18,18 @@ function areDatesClose(date1: string | Date, date2: string | Date) {
   return Math.abs(a.getTime() - b.getTime()) < maxTimeDelta;
 }
 
+function negate(amount: string) {
+  if (!amount.startsWith('-')) return `-${amount}`;
+  return amount.slice(1);
+}
+
 function filterMatches({ amount, date }: Transaction, unknownTransactions: { amount: string; date: string | Date }[]) {
   return unknownTransactions.some(
-    ({ amount: uAmount, date: uDate }) => amount == uAmount && areDatesClose(date, uDate),
+    ({ amount: uAmount, date: uDate }) => negate(amount) === uAmount && areDatesClose(date, uDate),
   );
 }
 
-async function main() {
+async function main(unknownTransactions: { amount: string; date: string | Date }[]) {
   // Delete saved sessions
   // await Promise.all(['Sessions', 'Session Storage'].map(dir => rm(join(userDataDir, 'Default', dir), { recursive: true, force: true })));
 
@@ -47,6 +52,8 @@ async function main() {
     .filter(({ status }) => status === 'Completed')
     // Remove duplicate order numbers
     .filter(({ orderNumber }, index, self) => self.findIndex(t => t.orderNumber === orderNumber) === index)
+    // Select only orders that have amounts (and approximate dates) that match unknown transactions
+    .filter(t => filterMatches(t, unknownTransactions));
 
   for (const transaction of transactionsToPrint) {
     console.log(Object.values(transaction).join(', '));
@@ -57,8 +64,11 @@ async function main() {
   if (headless) await browser.close();
 }
 
+const unknownTransactions = [
+];
+
 if (esMain(import.meta)) {
-  main().catch(e => {
+  main(unknownTransactions).catch(e => {
     console.error(e);
     if (!process.exitCode) {
       process.exitCode = 1;
