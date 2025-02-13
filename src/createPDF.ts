@@ -41,7 +41,7 @@ export async function printOrder(page: Page, orderNumber: string) {
     stamp.style.color = 'red';
     stamp.style.backgroundColor = 'white';
     stamp.style.opacity = '0.7';
-    stamp.style.fontSize = '50px';
+    stamp.style.fontSize = '3rem';
     stamp.contentEditable = 'false';
     stamp.textContent = 'Double click to edit. Shift+Enter to commit.';
     stamp.style.cursor = 'move';
