@@ -144,3 +144,5 @@ export interface Transaction {
 }
 
 const transactionUrl = 'https://www.amazon.com/cpe/yourpayments/transactions';
+
+// cSpell:ignore pmts
