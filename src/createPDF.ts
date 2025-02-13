@@ -36,16 +36,69 @@ export async function printOrder(page: Page, orderNumber: string) {
   const labelText = await page.evaluate(async () => {
     const stamp = document.createElement('div');
     stamp.style.position = 'absolute';
-    stamp.style.top = '100px';
-    stamp.style.left = '100px';
+    stamp.style.bottom = '-20px';
+    stamp.style.right = '-20px';
     stamp.style.color = 'red';
     stamp.style.backgroundColor = 'white';
     stamp.style.opacity = '0.7';
     stamp.style.fontSize = '50px';
-    stamp.contentEditable = 'true';
-    stamp.textContent = 'Placeholder';
+    stamp.contentEditable = 'false';
+    stamp.textContent = 'Double click to edit. Shift+Enter to commit.';
+    stamp.style.cursor = 'move';
 
-    document.body.appendChild(stamp);
+    let isDragging = false;
+    let initialBottom: number;
+    let initialRight: number;
+    let initialMouseX: number;
+    let initialMouseY: number;
+
+    stamp.addEventListener('mousedown', e => {
+      if (e.target === stamp && !stamp.isContentEditable) {
+        isDragging = true;
+        document.body.style.userSelect = 'none';
+
+        // Store initial bottom/right values
+        initialBottom = parseFloat(stamp.style.bottom) || 20;
+        initialRight = parseFloat(stamp.style.right) || 20;
+
+        // Store initial mouse position
+        initialMouseX = e.clientX;
+        initialMouseY = e.clientY;
+      }
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (isDragging) {
+        e.preventDefault();
+
+        // Calculate the delta of mouse movement
+        const deltaX = initialMouseX - e.clientX;
+        const deltaY = initialMouseY - e.clientY;
+
+        // Update position using bottom/right
+        stamp.style.bottom = `${initialBottom + deltaY}px`;
+        stamp.style.right = `${initialRight + deltaX}px`;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        document.body.style.userSelect = '';
+        // No need to recalculate - we're already using bottom/right
+      }
+    });
+
+    stamp.addEventListener('dblclick', () => {
+      const next = !stamp.isContentEditable;
+      stamp.contentEditable = next.toString();
+      stamp.style.cursor = next ? 'auto' : 'move';
+    });
+
+    const posViewContent = document.querySelector('div#pos_view_content');
+    if (!posViewContent) throw new Error('No div#pos_view_content');
+    posViewContent.appendChild(stamp);
+    (posViewContent as HTMLElement).style.position = 'relative';
 
     // Wait for user to add a message to the stamp and hit shift+enter
     await new Promise<void>(resolve => {
