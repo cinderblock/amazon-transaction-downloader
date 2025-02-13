@@ -112,6 +112,8 @@ export async function printOrder(page: Page, orderNumber: string) {
       });
     });
 
+    stamp.contentEditable = 'false';
+
     return stamp.textContent;
   });
 
