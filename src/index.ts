@@ -57,6 +57,7 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
   for (const transaction of transactionsToPrint) {
     const page = await browser.newPage();
     await printOrder(page, transaction.orderNumber);
+    await page.close();
   }
 
   if (autoClose) await browser.close();

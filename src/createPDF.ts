@@ -71,9 +71,6 @@ export async function printOrder(page: Page, orderNumber: string) {
 
   await page.pdf({ path });
 
-  // Doesn't work for some reason
-  await page.close();
-
   await print(path);
 
   await rm(path, { force: true });
