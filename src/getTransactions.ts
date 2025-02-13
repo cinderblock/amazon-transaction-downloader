@@ -106,10 +106,12 @@ export async function getTransactions(page: Page) {
 
             if (!status) throw new Error('Invalid status');
 
-            const orderNumber = transactionElement.children[++i]?.children[0]?.children[0]?.children[0]?.textContent;
+            const orderNumber = transactionElement.children[
+              ++i
+            ]?.children[0]?.children[0]?.children[0]?.textContent?.replace(/^Order #/, '');
             const merchant = transactionElement.children[++i]?.children[0]?.children[0]?.textContent;
 
-            if (!paymentMethod || !amount || !orderNumber || !merchant) {
+            if (!paymentMethod || !amount || !orderNumber || !merchant || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
               throw new Error('Invalid transaction');
             }
 
@@ -132,7 +134,7 @@ export async function getTransactions(page: Page) {
   });
 }
 
-interface Transaction {
+export interface Transaction {
   date: string;
   amount: string;
   paymentMethod: string;
