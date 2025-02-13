@@ -36,8 +36,8 @@ export async function printOrder(page: Page, orderNumber: string) {
   const labelText = await page.evaluate(async () => {
     const stamp = document.createElement('div');
     stamp.style.position = 'absolute';
-    stamp.style.bottom = '-20px';
-    stamp.style.right = '-20px';
+    stamp.style.bottom = '300px';
+    stamp.style.right = '30px';
     stamp.style.color = 'red';
     stamp.style.backgroundColor = 'white';
     stamp.style.opacity = '0.7';
