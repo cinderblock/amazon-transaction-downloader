@@ -4,7 +4,7 @@ import { getTransactions, Transaction } from './getTransactions.js';
 import { printOrder } from './createPDF.js';
 
 const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const headless = false;
+const autoClose = false;
 const userDataDir = 'user-data';
 
 function areDatesClose(date1: string | Date, date2: string | Date) {
@@ -31,7 +31,7 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
     executablePath,
-    headless,
+    headless: false,
     userDataDir,
     defaultViewport: null,
     args: ['--hide-crash-restore-bubble'],
@@ -56,7 +56,7 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
 
   await Promise.all(transactionsToPrint.map(async t => printOrder(await browser.newPage(), t.orderNumber)));
 
-  if (headless) await browser.close();
+  if (autoClose) await browser.close();
 }
 
 const unknownTransactions = [
