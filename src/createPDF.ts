@@ -86,7 +86,6 @@ export async function printOrder(page: Page, orderNumber: string) {
       if (isDragging) {
         isDragging = false;
         document.body.style.userSelect = '';
-        // No need to recalculate - we're already using bottom/right
       }
     });
 
