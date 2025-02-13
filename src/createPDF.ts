@@ -1,13 +1,26 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, rmdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Page } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
+import { tmpdir } from 'node:os';
 
 const { print } = printer;
 
 const orderUrl = 'https://www.amazon.com/gp/css/summary/print.html?orderID=';
 
-const tempDir = mkdtemp('amazon-print');
+let tempDir: Promise<string>;
+
+async function getTempDir() {
+  if (tempDir) return tempDir;
+
+  tempDir = mkdtemp(join(tmpdir(), 'amazon-print'));
+
+  tempDir.then(dir => console.log(`Created temp dir: ${dir}`));
+
+  tempDir.then(dir => process.on('beforeExit', async () => rmdir(dir)));
+
+  return tempDir;
+}
 
 export async function printOrder(page: Page, orderNumber: string) {
   if (!orderNumber || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
@@ -19,7 +32,7 @@ export async function printOrder(page: Page, orderNumber: string) {
   // Wait for specific selectors to load
   await page.waitForSelector('div#pos_view_section', { timeout: 1000 });
 
-  const path = join(await tempDir, `order-${orderNumber}.pdf`);
+  const path = join(await getTempDir(), `order-${orderNumber}.pdf`);
 
   await page.pdf({ path });
 
@@ -29,4 +42,6 @@ export async function printOrder(page: Page, orderNumber: string) {
   await print(path);
 
   await rm(path, { force: true });
+
+  return labelText;
 }
