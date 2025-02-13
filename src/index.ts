@@ -54,7 +54,10 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
     console.log(Object.values(transaction).join(', '));
   }
 
-  await Promise.all(transactionsToPrint.map(async t => printOrder(await browser.newPage(), t.orderNumber)));
+  for (const transaction of transactionsToPrint) {
+    const page = await browser.newPage();
+    await printOrder(page, transaction.orderNumber);
+  }
 
   if (autoClose) await browser.close();
 }
