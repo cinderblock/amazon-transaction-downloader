@@ -10,6 +10,15 @@ const orderUrl = 'https://www.amazon.com/gp/css/summary/print.html?orderID=';
 
 let tempDir: Promise<string>;
 
+// Standard Normal variate using Box-Muller transform.
+function gaussianRandom(mean = 0, standardDeviation = 1) {
+  const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+  const v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  // Transform to the desired mean and standard deviation:
+  return z * standardDeviation + mean;
+}
+
 async function getTempDir() {
   if (tempDir) return tempDir;
 
@@ -36,13 +45,14 @@ export async function printOrder(page: Page, orderNumber: string) {
   const labelText = await page.evaluate(async () => {
     const stamp = document.createElement('div');
     stamp.style.position = 'absolute';
-    stamp.style.bottom = '300px';
-    stamp.style.right = '30px';
+    stamp.style.bottom = `${gaussianRandom(300, 10)}px`;
+    stamp.style.right = `${gaussianRandom(30, 3)}px`;
     stamp.style.color = 'red';
     stamp.style.backgroundColor = 'white';
     stamp.style.opacity = '0.7';
     stamp.style.fontSize = '3rem';
     stamp.style.lineHeight = '1.2';
+    stamp.style.transform = `rotate(${gaussianRandom(-2, 2)}deg)`;
     stamp.contentEditable = 'false';
     stamp.textContent = 'Double click to edit. Shift+Enter to commit.';
     stamp.style.cursor = 'move';
