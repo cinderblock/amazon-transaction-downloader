@@ -34,6 +34,7 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
     headless: false,
     userDataDir,
     defaultViewport: null,
+    protocolTimeout: 2e9,
     args: ['--hide-crash-restore-bubble'],
   });
 
