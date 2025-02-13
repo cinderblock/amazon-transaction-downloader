@@ -49,7 +49,7 @@ export async function printOrder(page: Page, orderNumber: string) {
 
     // Wait for user to add a message to the stamp and hit shift+enter
     await new Promise<void>(resolve => {
-      stamp.addEventListener('keydown', e => {
+      document.addEventListener('keydown', e => {
         if (e.key === 'Enter' && e.shiftKey) {
           e.preventDefault();
           e.stopPropagation();
