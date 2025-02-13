@@ -42,29 +42,31 @@ export async function printOrder(page: Page, orderNumber: string) {
   await page.waitForSelector('div#pos_view_section', { timeout: 1000 });
 
   // A place to add a stamp to the page with some message
-  const labelText = await page.evaluate(async () => {
-    const stamp = document.createElement('div');
-    stamp.style.position = 'absolute';
-    stamp.style.bottom = `${gaussianRandom(300, 10)}px`;
-    stamp.style.right = `${gaussianRandom(30, 3)}px`;
-    stamp.style.color = 'red';
-    stamp.style.backgroundColor = 'white';
-    stamp.style.opacity = '0.7';
-    stamp.style.fontSize = '3rem';
-    stamp.style.lineHeight = '1.2';
-    stamp.style.transform = `rotate(${gaussianRandom(-2, 2)}deg)`;
-    stamp.contentEditable = 'false';
-    stamp.textContent = 'Double click to edit. Shift+Enter to commit.';
-    stamp.style.cursor = 'move';
+  const labelText = await page.evaluate(
+    async randoms => {
+      const stamp = document.createElement('div');
+      stamp.style.position = 'absolute';
+      stamp.style.bottom = `${300 + 10 * randoms[0]}px`;
+      stamp.style.right = `${30 + 3 * randoms[1]}px`;
+      stamp.style.color = 'red';
+      stamp.style.opacity = '0.7';
+      stamp.style.fontSize = '3rem';
+      stamp.style.lineHeight = '1.2';
+      stamp.style.transform = `rotate(${-2 + 2 * randoms[2]}deg)`;
+      stamp.contentEditable = 'false';
+      stamp.textContent = 'Double click to edit. Shift+Enter to commit.';
+      stamp.style.cursor = 'move';
 
-    let isDragging = false;
-    let initialBottom: number;
-    let initialRight: number;
-    let initialMouseX: number;
-    let initialMouseY: number;
+      let isDragging = false;
+      let initialBottom: number;
+      let initialRight: number;
+      let initialMouseX: number;
+      let initialMouseY: number;
 
-    stamp.addEventListener('mousedown', e => {
-      if (e.target === stamp && !stamp.isContentEditable) {
+      stamp.addEventListener('mousedown', e => {
+        if (e.target !== stamp) return;
+        if (stamp.isContentEditable) return;
+
         isDragging = true;
         document.body.style.userSelect = 'none';
 
@@ -75,11 +77,11 @@ export async function printOrder(page: Page, orderNumber: string) {
         // Store initial mouse position
         initialMouseX = e.clientX;
         initialMouseY = e.clientY;
-      }
-    });
+      });
 
-    document.addEventListener('mousemove', e => {
-      if (isDragging) {
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+
         e.preventDefault();
 
         // Calculate the delta of mouse movement
@@ -89,42 +91,42 @@ export async function printOrder(page: Page, orderNumber: string) {
         // Update position using bottom/right
         stamp.style.bottom = `${initialBottom + deltaY}px`;
         stamp.style.right = `${initialRight + deltaX}px`;
-      }
-    });
+      });
 
-    document.addEventListener('mouseup', () => {
-      if (isDragging) {
+      document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
         isDragging = false;
         document.body.style.userSelect = '';
-      }
-    });
-
-    stamp.addEventListener('dblclick', () => {
-      const next = !stamp.isContentEditable;
-      stamp.contentEditable = next.toString();
-      stamp.style.cursor = next ? 'auto' : 'move';
-    });
-
-    const posViewContent = document.querySelector('div#pos_view_content');
-    if (!posViewContent) throw new Error('No div#pos_view_content');
-    posViewContent.appendChild(stamp);
-    (posViewContent as HTMLElement).style.position = 'relative';
-
-    // Wait for user to add a message to the stamp and hit shift+enter
-    await new Promise<void>(resolve => {
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && e.shiftKey) {
-          e.preventDefault();
-          e.stopPropagation();
-          resolve();
-        }
       });
-    });
 
-    stamp.contentEditable = 'false';
+      stamp.addEventListener('dblclick', () => {
+        const next = !stamp.isContentEditable;
+        stamp.contentEditable = next.toString();
+        stamp.style.cursor = next ? 'auto' : 'move';
+      });
 
-    return stamp.textContent;
-  });
+      const posViewContent = document.querySelector('div#pos_view_content') as HTMLElement;
+      if (!posViewContent) throw new Error('No div#pos_view_content');
+      posViewContent.appendChild(stamp);
+      posViewContent.style.position = 'relative';
+
+      // Wait for user to add a message to the stamp and hit shift+enter
+      await new Promise<void>(resolve => {
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            resolve();
+          }
+        });
+      });
+
+      stamp.contentEditable = 'false';
+
+      return stamp.textContent;
+    },
+    Array.from({ length: 3 }, gaussianRandom),
+  );
 
   console.log(`Order ${orderNumber} is ${labelText}`);
 
