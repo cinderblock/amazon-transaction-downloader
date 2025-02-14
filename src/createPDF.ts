@@ -2,30 +2,18 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Page } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
-
+import { gaussianRandom } from './gaussianRandom.js';
 const { print } = printer;
 
-const orderUrl = 'https://www.amazon.com/gp/css/summary/print.html?orderID=';
-
-// Standard Normal variate using Box-Muller transform.
-function gaussianRandom(mean = 0, standardDeviation = 1) {
-  const u = 1 - Math.random(); // Converting [0,1) to (0,1]
-  const v = Math.random();
-  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-  // Transform to the desired mean and standard deviation:
-  return z * standardDeviation + mean;
-}
-
 const SkipPrint = true;
-
-const orderDir = 'coded-orders';
+const OrderDir = 'coded-orders';
 
 export async function printOrder(page: Page, orderNumber: string, rePrint = true) {
   if (!orderNumber || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
     throw new Error('Invalid order number');
   }
 
-  const path = join(orderDir, `order-${orderNumber}.pdf`);
+  const path = join(OrderDir, `order-${orderNumber}.pdf`);
 
   // If the file exists, print it if rePrint is true
   if (await stat(path).catch(() => {})) {
@@ -33,7 +21,7 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
     return;
   }
 
-  await page.goto(`${orderUrl}${orderNumber}`, { waitUntil: 'load' });
+  await page.goto(`${OrderUrl}${orderNumber}`, { waitUntil: 'load' });
 
   // Wait for specific selectors to load
   await page.waitForSelector('div#pos_view_section', { timeout: 1000 });
@@ -137,3 +125,5 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
 
   return labelText;
 }
+
+const OrderUrl = 'https://www.amazon.com/gp/css/summary/print.html?orderID=';
