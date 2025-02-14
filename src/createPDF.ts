@@ -1,14 +1,11 @@
-import { mkdtemp, rm, rmdir } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Page } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
-import { tmpdir } from 'node:os';
 
 const { print } = printer;
 
 const orderUrl = 'https://www.amazon.com/gp/css/summary/print.html?orderID=';
-
-let tempDir: Promise<string>;
 
 // Standard Normal variate using Box-Muller transform.
 function gaussianRandom(mean = 0, standardDeviation = 1) {
@@ -19,21 +16,21 @@ function gaussianRandom(mean = 0, standardDeviation = 1) {
   return z * standardDeviation + mean;
 }
 
-async function getTempDir() {
-  if (tempDir) return tempDir;
+const SkipPrint = true;
 
-  tempDir = mkdtemp(join(tmpdir(), 'amazon-print'));
+const orderDir = 'coded-orders';
 
-  tempDir.then(dir => console.log(`Created temp dir: ${dir}`));
-
-  tempDir.then(dir => process.on('beforeExit', async () => rmdir(dir)));
-
-  return tempDir;
-}
-
-export async function printOrder(page: Page, orderNumber: string) {
+export async function printOrder(page: Page, orderNumber: string, rePrint = true) {
   if (!orderNumber || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
     throw new Error('Invalid order number');
+  }
+
+  const path = join(orderDir, `order-${orderNumber}.pdf`);
+
+  // If the file exists, print it if rePrint is true
+  if (await stat(path).catch(() => {})) {
+    if (!SkipPrint && rePrint) await print(path);
+    return;
   }
 
   await page.goto(`${orderUrl}${orderNumber}`, { waitUntil: 'load' });
@@ -134,13 +131,9 @@ export async function printOrder(page: Page, orderNumber: string) {
     throw new Error('No label text');
   }
 
-  const path = join(await getTempDir(), `order-${orderNumber}.pdf`);
-
   await page.pdf({ path });
 
-  await print(path);
-
-  await rm(path, { force: true });
+  if (!SkipPrint) await print(path);
 
   return labelText;
 }
