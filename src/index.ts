@@ -28,6 +28,13 @@ function filterMatches({ amount, date }: Transaction, unknownTransactions: { amo
 }
 
 async function main(unknownTransactions: { amount: string; date: string | Date }[]) {
+  const earliestDate = unknownTransactions.reduce((acc, { date }) => {
+    if (!acc || new Date(date) < new Date(acc)) return date;
+    return acc;
+  }, unknownTransactions[0].date);
+
+  const earliestSearch = new Date(new Date(earliestDate).getTime() - 1000 * 60 * 60 * 24 * 4);
+
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
     executablePath,
@@ -41,7 +48,7 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
   // Get first tab
   const page = (await browser.pages())[0];
 
-  const transactions = await getTransactions(page);
+  const transactions = await getTransactions(page, earliestSearch);
 
   const transactionsToPrint = transactions
     // Ignore non-completed orders
