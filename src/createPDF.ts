@@ -1,5 +1,5 @@
-import { stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, stat } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { Page } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
 import { gaussianRandom } from './gaussianRandom.js';
@@ -118,6 +118,8 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
   if (!labelText) {
     throw new Error('No label text');
   }
+
+  await mkdir(dirname(path), { recursive: true });
 
   await page.pdf({ path });
 
