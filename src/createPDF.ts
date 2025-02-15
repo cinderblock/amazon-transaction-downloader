@@ -5,7 +5,7 @@ import printer from 'pdf-to-printer';
 import { gaussianRandom } from './gaussianRandom.js';
 const { print } = printer;
 
-const SkipPrint = true;
+const SkipPrint = false;
 const OrderDir = 'coded-orders';
 
 export async function printOrder(page: Page, orderNumber: string, rePrint = true) {
@@ -16,6 +16,8 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
   const path = join(OrderDir, `order-${orderNumber}.pdf`);
 
   function doPrint() {
+    if (SkipPrint) return;
+
     void print(path).catch(e => {
       console.error(`Error printing ${path}`);
       console.error(e);
@@ -24,7 +26,7 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
 
   // If the file exists, print it if rePrint is true
   if (await stat(path).catch(() => {})) {
-    if (!SkipPrint && rePrint) doPrint();
+    if (rePrint) doPrint();
     return;
   }
 
@@ -138,7 +140,7 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
 
   await page.pdf({ path });
 
-  if (!SkipPrint) doPrint();
+  doPrint();
 
   return labelText;
 }
