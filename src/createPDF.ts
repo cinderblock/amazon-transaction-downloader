@@ -115,12 +115,12 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
 
       stamp.contentEditable = 'false';
 
-      return stamp.textContent;
+      return stamp.innerText;
     },
     Array.from({ length: 3 }, gaussianRandom),
   );
 
-  console.log(`Order ${orderNumber} is ${labelText}`);
+  console.log(`Order ${orderNumber} is ${labelText.replaceAll('\n', ' ')}`);
 
   if (!labelText) {
     throw new Error('No label text');
