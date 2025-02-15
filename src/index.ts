@@ -8,11 +8,11 @@ const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.e
 const autoClose = false;
 const userDataDir = 'user-data';
 
-function areDatesClose(date1: string | Date, date2: string | Date) {
+function areDatesClose(date1: string | Date, date2: string | Date, days = 4) {
   const a = new Date(date1);
   const b = new Date(date2);
 
-  const maxTimeDelta = 1000 * 60 * 60 * 24 * 4; // 4 days
+  const maxTimeDelta = 1000 * 60 * 60 * 24 * days;
 
   return Math.abs(a.getTime() - b.getTime()) < maxTimeDelta;
 }
