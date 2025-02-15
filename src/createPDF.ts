@@ -15,9 +15,16 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
 
   const path = join(OrderDir, `order-${orderNumber}.pdf`);
 
+  function doPrint() {
+    void print(path).catch(e => {
+      console.error(`Error printing ${path}`);
+      console.error(e);
+    });
+  }
+
   // If the file exists, print it if rePrint is true
   if (await stat(path).catch(() => {})) {
-    if (!SkipPrint && rePrint) await print(path);
+    if (!SkipPrint && rePrint) doPrint();
     return;
   }
 
@@ -123,7 +130,7 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
 
   await page.pdf({ path });
 
-  if (!SkipPrint) await print(path);
+  if (!SkipPrint) doPrint();
 
   return labelText;
 }
