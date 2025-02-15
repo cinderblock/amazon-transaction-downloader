@@ -1,6 +1,6 @@
 import { mkdir, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { Page } from 'puppeteer-core';
+import { Browser } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
 import { gaussianRandom } from './gaussianRandom.js';
 const { print } = printer;
@@ -8,7 +8,7 @@ const { print } = printer;
 const SkipPrint = false;
 const OrderDir = 'coded-orders';
 
-export async function printOrder(page: Page, orderNumber: string, rePrint = true) {
+export async function printOrder(browser: Browser, orderNumber: string, rePrint = true) {
   if (!orderNumber || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
     throw new Error('Invalid order number');
   }
@@ -29,6 +29,8 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
     if (rePrint) doPrint();
     return;
   }
+
+  const page = await browser.newPage();
 
   await page.goto(`${OrderUrl}${orderNumber}`, { waitUntil: 'load' });
 
@@ -139,6 +141,8 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
   await mkdir(dirname(path), { recursive: true });
 
   await page.pdf({ path });
+
+  void page.close();
 
   doPrint();
 

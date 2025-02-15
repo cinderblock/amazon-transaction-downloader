@@ -1,7 +1,8 @@
 import esMain from 'es-main';
 import puppeteer from 'puppeteer-core';
-import { getTransactions, Transaction } from './getTransactions.js';
+import { getTransactions } from './getTransactions.js';
 import { printOrder } from './createPDF.js';
+import { absTimeDelta } from './absTimeDelta.js';
 
 const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const autoClose = false;
@@ -21,19 +22,13 @@ function negate(amount: string) {
   return amount.slice(1);
 }
 
-function filterMatches({ amount, date }: Transaction, unknownTransactions: { amount: string; date: string | Date }[]) {
-  return unknownTransactions.some(
-    ({ amount: uAmount, date: uDate }) => negate(amount) === uAmount && areDatesClose(date, uDate),
-  );
-}
+type UnknownTransaction = { amount: string; date: string | Date };
 
-async function main(unknownTransactions: { amount: string; date: string | Date }[]) {
-  const earliestDate = unknownTransactions.reduce((acc, { date }) => {
-    if (!acc || new Date(date) < new Date(acc)) return date;
-    return acc;
-  }, unknownTransactions[0].date);
-
-  const earliestSearch = new Date(new Date(earliestDate).getTime() - 1000 * 60 * 60 * 24 * 4);
+async function main(unknownTransactions: UnknownTransaction[]) {
+  if (!unknownTransactions.length) {
+    console.log('No unknown transactions');
+    return;
+  }
 
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
@@ -48,29 +43,58 @@ async function main(unknownTransactions: { amount: string; date: string | Date }
   // Get first tab
   const page = (await browser.pages())[0];
 
-  const transactions = await getTransactions(page, earliestSearch);
+  const transactions = getTransactions(page);
+  const processedOrders: string[] = [];
 
-  const transactionsToPrint = transactions
+  for await (const transaction of transactions) {
+    if (!unknownTransactions.length) break;
+
     // Ignore non-completed orders
-    .filter(({ status }) => status === 'Completed')
+    if (transaction.status !== 'Completed') continue;
+
+    // Remove orders that used known personal payment method
+    if (transaction.paymentMethod === 'Mastercard ****4798') continue;
+
     // Remove duplicate order numbers
-    .filter(({ orderNumber }, index, self) => self.findIndex(t => t.orderNumber === orderNumber) === index)
-    // Select only orders that have amounts (and approximate dates) that match unknown transactions
-    .filter(t => filterMatches(t, unknownTransactions));
+    if (processedOrders.includes(transaction.orderNumber)) continue;
 
-  for (const transaction of transactionsToPrint) {
-    console.log(Object.values(transaction).join(', '));
-  }
-
-  for (const transaction of transactionsToPrint) {
-    const page = await browser.newPage();
-    try {
-      await printOrder(page, transaction.orderNumber);
-      await page.close();
-    } catch (e) {
-      console.error(e);
+    function distanceToKnown(t1: UnknownTransaction, t2: UnknownTransaction) {
+      return absTimeDelta(t1.date, transaction.date) - absTimeDelta(t2.date, transaction.date);
     }
+
+    function isDateClose({ date }: UnknownTransaction) {
+      return areDatesClose(date, transaction.date);
+    }
+
+    // Select unknown transaction with same amount and closest date
+    const closestUnknownIndex = unknownTransactions.indexOf(
+      unknownTransactions
+        .filter(({ amount }) => negate(amount) === transaction.amount)
+        .filter(isDateClose)
+        .sort(distanceToKnown)[0],
+    );
+
+    if (closestUnknownIndex === -1) {
+      console.log(
+        `No matching transaction found for: ${transaction.orderNumber} ${transaction.date} ${transaction.amount}`,
+      );
+      continue;
+    }
+
+    // Some orders have multiple transactions
+    processedOrders.push(transaction.orderNumber);
+
+    // Remove the matched unknown transaction
+    const { date, amount } = unknownTransactions.splice(closestUnknownIndex, 1)[0];
+
+    // Log the match
+    console.log(`Matched ${transaction.orderNumber} with ${date}: ${amount}`);
+
+    await printOrder(browser, transaction.orderNumber, false).catch(e => console.error(e));
   }
+
+  // Close the transaction generator
+  transactions.next(false);
 
   if (autoClose) await browser.close();
 }

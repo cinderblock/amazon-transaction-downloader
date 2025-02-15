@@ -1,15 +1,17 @@
 import { Page } from 'puppeteer-core';
 
-export async function getTransactions(page: Page, earliestDate?: Date) {
+export async function* getTransactions(page: Page): AsyncGenerator<Transaction, void, boolean | undefined> {
   page.on('error', error => {
     console.error('Page error', error);
   });
 
   await page.goto(transactionUrl, { waitUntil: 'load' });
 
-  const result: Transaction[] = [];
+  let minTime: Promise<void> | undefined;
 
-  while (true) {
+  main: while (true) {
+    await minTime;
+
     // Wait for transactions to load (or login to finish)
     await page.waitForSelector('.apx-transaction-date-container', { timeout: 15000 });
 
@@ -57,7 +59,7 @@ export async function getTransactions(page: Page, earliestDate?: Date) {
     //         ...
     // div
     //   div.apx-transactions-sleeve-header-container (repeated for each category)
-    const newTransactions = await page.evaluate(() => {
+    const transactions = await page.evaluate(() => {
       const transactions: Transaction[] = [];
 
       const categoryHeaders = document.querySelectorAll('.apx-transactions-sleeve-header-container');
@@ -137,18 +139,24 @@ export async function getTransactions(page: Page, earliestDate?: Date) {
       return transactions;
     });
 
-    result.push(...newTransactions);
-
-    if (!earliestDate) break;
-
-    if (new Date(newTransactions[newTransactions.length - 1].date) < earliestDate) break;
-
+    // Check if there's a next page button
     const button = await page.$('div.a-span-last input.a-button-input');
 
     await button?.click();
+
+    // Set timeout flag to prevent spamming the server
+    minTime = new Promise<void>(resolve => setTimeout(resolve, 500));
+
+    // Yield each transaction individually
+    for (const transaction of transactions) {
+      const done = yield transaction;
+      if (done) break main;
+    }
+
+    if (!button) break main;
   }
 
-  return result;
+  return page.close();
 }
 
 export interface Transaction {
