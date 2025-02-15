@@ -115,6 +115,7 @@ export async function getTransactions(page: Page, earliestDate?: Date) {
               const merchant = transactionElement.children[++i]?.children[0]?.children[0]?.textContent;
 
               if (!paymentMethod || !amount || !orderNumber || !merchant || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
+                console.log(paymentMethod, amount, orderNumber, merchant);
                 throw new Error('Invalid transaction');
               }
 
