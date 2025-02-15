@@ -45,8 +45,8 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
       stamp.style.fontSize = '3rem';
       stamp.style.lineHeight = '1.2';
       stamp.style.transform = `rotate(${-2 + 2 * randoms[2]}deg)`;
-      stamp.contentEditable = 'false';
-      stamp.textContent = 'Double click to edit. Shift+Enter to commit.';
+      stamp.contentEditable = 'true';
+      stamp.textContent = 'Double click to move. Shift+Enter to commit.';
       stamp.style.cursor = 'move';
 
       let isDragging = false;
@@ -101,6 +101,14 @@ export async function printOrder(page: Page, orderNumber: string, rePrint = true
       if (!posViewContent) throw new Error('No div#pos_view_content');
       posViewContent.appendChild(stamp);
       posViewContent.style.position = 'relative';
+
+      // Select all the text in the stamp
+      stamp.focus();
+      const range = document.createRange();
+      range.selectNodeContents(stamp);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
 
       // Wait for user to add a message to the stamp and hit shift+enter
       await new Promise<void>(resolve => {
