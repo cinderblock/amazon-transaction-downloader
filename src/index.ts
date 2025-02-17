@@ -80,9 +80,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     );
 
     if (closestUnknownIndex === -1) {
-      console.log(
-        `No matching transaction found for: ${transaction.orderNumber} ${transaction.date} ${transaction.amount}`,
-      );
+      // console.log(`No match: ${transaction.orderNumber} ${transaction.date} ${transaction.amount}`);
       continue;
     }
 
