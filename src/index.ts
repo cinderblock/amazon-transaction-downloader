@@ -58,9 +58,6 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     // Remove orders that used known personal payment method
     if (transaction.paymentMethod === 'Mastercard ****4798') continue;
 
-    // Remove duplicate order numbers
-    if (processedOrders.includes(transaction.orderNumber)) continue;
-
     // break if transaction is significantly older than oldest unknown
     if (timeDelta(oldestUnknown.date, transaction.date) > 1000 * 60 * 60 * 24 * 7) {
       break;
@@ -87,11 +84,16 @@ async function main(unknownTransactions: UnknownTransaction[]) {
       continue;
     }
 
-    // Some orders have multiple transactions
-    processedOrders.push(transaction.orderNumber);
-
     // Remove the matched unknown transaction
     const { date, amount } = unknownTransactions.splice(closestUnknownIndex, 1)[0];
+
+    // Remove transactions that are from an order that has already been processed
+    if (processedOrders.includes(transaction.orderNumber)) {
+      continue;
+    }
+
+    // Some orders have multiple transactions
+    processedOrders.push(transaction.orderNumber);
 
     // Log the match
     console.log(`Matched ${transaction.orderNumber} with ${date}: ${amount}`);
