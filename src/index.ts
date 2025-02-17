@@ -28,6 +28,8 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     return;
   }
 
+  const oldestUnknown = unknownTransactions.sort((a, b) => timeDelta(a.date, b.date))[0];
+
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
     executablePath,
@@ -55,6 +57,11 @@ async function main(unknownTransactions: UnknownTransaction[]) {
 
     // Remove duplicate order numbers
     if (processedOrders.includes(transaction.orderNumber)) continue;
+
+    // break if transaction is significantly older than oldest unknown
+    if (timeDelta(oldestUnknown.date, transaction.date) > 1000 * 60 * 60 * 24 * 7) {
+      break;
+    }
 
     function distanceToKnown(t1: UnknownTransaction, t2: UnknownTransaction) {
       return absTimeDelta(t1.date, transaction.date) - absTimeDelta(t2.date, transaction.date);
