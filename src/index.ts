@@ -106,7 +106,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     const possibleMatch = transactions.find(({ amount }) => negate(amount) === unknown.amount);
 
     console.log(
-      `${unknown.date}: ${unknown.amount} ${possibleMatch ? `?? ${possibleMatch.orderNumber} on ${possibleMatch.date} Delta: ${timeDelta(unknown.date, possibleMatch.date)}` : ''}`,
+      `${unknown.date}: ${unknown.amount}${possibleMatch ? ` Identical amount: ${possibleMatch.orderNumber} on ${possibleMatch.date} (${(timeDelta(unknown.date, possibleMatch.date) / 1000 / 60 / 60 / 24).toFixed(0)} day delta)` : ''}`,
     );
   }
 
