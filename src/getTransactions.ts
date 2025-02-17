@@ -7,16 +7,14 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
 
   await page.goto(transactionUrl, { waitUntil: 'load' });
 
-  const MinTime = 100;
-  let minTime: Promise<unknown> | undefined;
+  // TODO: If there is a login prompt, restart without headless, if necessary
+  let nextPageReady: Promise<unknown> | undefined = page.waitForSelector('.apx-transaction-date-container', {
+    timeout: 15000,
+  });
 
-  main: while (true) {
-    await minTime;
-
+  while (true) {
     // Wait for transactions to load (or login to finish)
-    await page.waitForSelector('.apx-transaction-date-container', { timeout: 15000 });
-
-    // TODO: If there is a login prompt, restart without headless, if necessary
+    await nextPageReady;
 
     // Simplified Document Tree
     // ...
@@ -139,31 +137,24 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
       return transactions;
     });
 
-    // Check if there's a next page button
+    // Get the next page button
     const button = await page.$('div.a-span-last input.a-button-input');
 
-    await button?.click();
-
-    minTime = Promise.all([
-      // Set timeout flag to prevent spamming the server
-      new Promise<void>(resolve => setTimeout(resolve, MinTime)),
-      (async () => {
-        const spinner = await page.waitForSelector('.pmts-loading-async-widget-spinner-overlay', { timeout: 1000 });
-        if (!spinner) throw new Error('Spinner found');
-        await page.waitForNetworkIdle();
-      })(),
-    ]);
+    // Click it and get a promise that resolves when the next page loads
+    nextPageReady = button
+      ?.click()
+      .then(() => page.waitForSelector('.pmts-loading-async-widget-spinner-overlay', { timeout: 1000 }))
+      .then(() => page.waitForSelector('.pmts-loading-async-widget-spinner-overlay', { hidden: true }))
+      .catch(() => {});
 
     // Yield each transaction individually
     for (const transaction of transactions) {
       const done = yield transaction;
-      if (done) break main;
+      if (done) return;
     }
 
-    if (!button) break main;
+    if (!button) throw new Error('No next page button');
   }
-
-  return page.close();
 }
 
 export interface Transaction {
