@@ -5,7 +5,7 @@ import { printOrder } from './createPDF.js';
 import { absTimeDelta } from './absTimeDelta.js';
 
 const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const autoClose = false;
+const autoClose = true;
 const userDataDir = 'user-data';
 
 function areDatesClose(date1: string | Date, date2: string | Date, days = 4) {
