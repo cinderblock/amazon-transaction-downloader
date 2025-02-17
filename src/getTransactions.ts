@@ -7,7 +7,8 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
 
   await page.goto(transactionUrl, { waitUntil: 'load' });
 
-  let minTime: Promise<void> | undefined;
+  const MinTime = 100;
+  let minTime: Promise<unknown> | undefined;
 
   main: while (true) {
     await minTime;
@@ -143,8 +144,15 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
 
     await button?.click();
 
-    // Set timeout flag to prevent spamming the server
-    minTime = new Promise<void>(resolve => setTimeout(resolve, 500));
+    minTime = Promise.all([
+      // Set timeout flag to prevent spamming the server
+      new Promise<void>(resolve => setTimeout(resolve, MinTime)),
+      (async () => {
+        const spinner = await page.waitForSelector('.pmts-loading-async-widget-spinner-overlay', { timeout: 1000 });
+        if (!spinner) throw new Error('Spinner found');
+        await page.waitForNetworkIdle();
+      })(),
+    ]);
 
     // Yield each transaction individually
     for (const transaction of transactions) {
