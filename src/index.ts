@@ -1,6 +1,6 @@
 import esMain from 'es-main';
 import puppeteer from 'puppeteer-core';
-import { getTransactions } from './getTransactions.js';
+import { getTransactions, Transaction } from './getTransactions.js';
 import { printOrder } from './createPDF.js';
 import { absTimeDelta, timeDelta } from './timeDelta.js';
 
