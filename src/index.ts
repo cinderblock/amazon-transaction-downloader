@@ -110,9 +110,6 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     );
   }
 
-  // Close the transaction generator
-  await transactionGenerator.next(true);
-
   if (autoClose) await browser.close();
 }
 
