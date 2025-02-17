@@ -68,7 +68,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     }
 
     function isDateClose({ date }: UnknownTransaction) {
-      return areDatesClose(date, transaction.date);
+      return areDatesClose(date, transaction.date, 6);
     }
 
     // Select unknown transaction with same amount and closest date
