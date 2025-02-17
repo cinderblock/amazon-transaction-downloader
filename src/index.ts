@@ -43,11 +43,14 @@ async function main(unknownTransactions: UnknownTransaction[]) {
   // Get first tab
   const page = (await browser.pages())[0];
 
-  const transactions = getTransactions(page);
+  const transactionGenerator = getTransactions(page);
   const processedOrders: string[] = [];
+  const transactions: Transaction[] = [];
 
-  for await (const transaction of transactions) {
+  for await (const transaction of transactionGenerator) {
     if (!unknownTransactions.length) break;
+
+    transactions.push(transaction);
 
     // Ignore non-completed orders
     if (transaction.status !== 'Completed') continue;
@@ -96,8 +99,17 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     await printOrder(browser, transaction.orderNumber, false).catch(e => console.error(e));
   }
 
+  console.log(`Unmatched transactions: ${unknownTransactions.length}`);
+  for (const unknown of unknownTransactions) {
+    const possibleMatch = transactions.find(({ amount }) => negate(amount) === unknown.amount);
+
+    console.log(
+      `${unknown.date}: ${unknown.amount} ${possibleMatch ? `?? ${possibleMatch.orderNumber} on ${possibleMatch.date} Delta: ${timeDelta(unknown.date, possibleMatch.date)}` : ''}`,
+    );
+  }
+
   // Close the transaction generator
-  transactions.next(false);
+  await transactionGenerator.next(true);
 
   if (autoClose) await browser.close();
 }
