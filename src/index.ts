@@ -2,7 +2,7 @@ import esMain from 'es-main';
 import puppeteer from 'puppeteer-core';
 import { getTransactions } from './getTransactions.js';
 import { printOrder } from './createPDF.js';
-import { absTimeDelta } from './absTimeDelta.js';
+import { absTimeDelta, timeDelta } from './timeDelta.js';
 
 const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const autoClose = true;
