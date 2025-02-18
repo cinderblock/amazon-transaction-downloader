@@ -3,13 +3,14 @@ import { dirname, join } from 'node:path';
 import { Browser } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
 import { gaussianRandom } from './gaussianRandom.js';
+import { OrderRegex } from './AmazonConstants.js';
 const { print } = printer;
 
 const SkipPrint = false;
 const OrderDir = 'coded-orders';
 
 export async function printOrder(browser: Browser, orderNumber: string, rePrint = true) {
-  if (!orderNumber || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
+  if (!orderNumber || !OrderRegex.test(orderNumber)) {
     throw new Error('Invalid order number');
   }
 

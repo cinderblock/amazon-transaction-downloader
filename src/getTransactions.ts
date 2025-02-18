@@ -1,11 +1,12 @@
 import { Page } from 'puppeteer-core';
+import { OrderRegex, TransactionUrl } from './AmazonConstants.js';
 
 export async function* getTransactions(page: Page): AsyncGenerator<Transaction, void, boolean | undefined> {
   page.on('error', error => {
     console.error('Page error', error);
   });
 
-  await page.goto(transactionUrl, { waitUntil: 'load' });
+  await page.goto(TransactionUrl, { waitUntil: 'load' });
 
   // TODO: If there is a login prompt, restart without headless, if necessary
   let nextPageReady: Promise<unknown> | undefined = page.waitForSelector('.apx-transaction-date-container', {
@@ -115,7 +116,7 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
               ]?.children[0]?.children[0]?.children[0]?.textContent?.replace(/^Order #/, '');
               const merchant = transactionElement.children[++i]?.children[0]?.children[0]?.textContent ?? '';
 
-              if (!paymentMethod || !amount || !orderNumber || !orderNumber.match(/^\d{3}-\d{7}-\d{7}$/)) {
+              if (!paymentMethod || !amount || !orderNumber || !OrderRegex.test(orderNumber)) {
                 throw new Error(`Invalid transaction: ${paymentMethod} ${amount} ${orderNumber} ${merchant}`);
               }
 
@@ -165,7 +166,5 @@ export interface Transaction {
   merchant: string;
   status: string;
 }
-
-const transactionUrl = 'https://www.amazon.com/cpe/yourpayments/transactions';
 
 // cSpell:ignore pmts
