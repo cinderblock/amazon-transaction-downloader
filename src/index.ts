@@ -3,8 +3,9 @@ import puppeteer from 'puppeteer-core';
 import { getTransactions, Transaction } from './getTransactions.js';
 import { printOrder } from './createPDF.js';
 import { absTimeDelta, timeDelta } from './timeDelta.js';
+import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
 
-const executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const autoClose = true;
 const userDataDir = 'user-data';
 
@@ -20,6 +21,27 @@ function negate(amount: string) {
   return amount.slice(1);
 }
 
+async function getChromePath() {
+  // TODO: Make this cross-platform
+  if (process.platform !== 'win32') throw new Error('Not yet implemented');
+
+  const prefixToCheck = ['C:\\Program Files', 'C:\\Program Files (x86)'];
+
+  const paths = prefixToCheck.map(prefix => join(prefix, 'Google/Chrome/Application/chrome.exe'));
+
+  for (const path of paths) {
+    try {
+      await stat(path);
+      return path;
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('ENOENT')) continue;
+      throw e;
+    }
+  }
+
+  throw new Error('Chrome not found');
+}
+
 type UnknownTransaction = { amount: string; date: string | Date };
 
 async function main(unknownTransactions: UnknownTransaction[]) {
@@ -32,7 +54,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
 
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
-    executablePath,
+    executablePath: await getChromePath(),
     headless: false,
     userDataDir,
     defaultViewport: null,
