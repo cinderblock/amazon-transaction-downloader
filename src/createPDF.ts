@@ -38,14 +38,23 @@ export async function printOrder(browser: Browser, orderNumber: string, rePrint 
   await page.goto(`${baseUrl}${orderNumber}`, { waitUntil: 'load' });
 
   // Wait for specific selectors to load
-  await page.waitForSelector('div#pos_view_section', { timeout: 1000 });
+  const found = await Promise.race(
+    ['div#pos_view_content', 'div.orderSummary'].map(sel =>
+      page.waitForSelector(sel, { timeout: 1000 }).catch(() => {}),
+    ),
+  );
+
+  if (!found) throw new Error('Failed to find expected content');
 
   // A place to add a stamp to the page with some message
   const labelText = await page.evaluate(
     async randoms => {
+      const normalView = document.querySelector('div#pos_view_content') as HTMLDivElement | null;
+      const digitalView = document.querySelector('div.orderSummary') as HTMLDivElement | null;
+
       const stamp = document.createElement('div');
       stamp.style.position = 'absolute';
-      stamp.style.bottom = `${300 + 10 * randoms[0]}px`;
+      stamp.style.bottom = `${(normalView ? 300 : -200) + 10 * randoms[0]}px`;
       stamp.style.right = `${30 + 3 * randoms[1]}px`;
       stamp.style.color = 'red';
       stamp.style.opacity = '0.7';
@@ -104,9 +113,8 @@ export async function printOrder(browser: Browser, orderNumber: string, rePrint 
         stamp.style.cursor = next ? 'auto' : 'move';
       });
 
-      const posViewContent = (document.querySelector('div#pos_view_content') ||
-        document.querySelector('div#orderSummary')) as HTMLDivElement | null;
-      if (!posViewContent) throw new Error('No div#pos_view_content or div#orderSummary');
+      const posViewContent = normalView || digitalView;
+      if (!posViewContent) throw new Error('No div#pos_view_content or div.orderSummary');
       posViewContent.appendChild(stamp);
       posViewContent.style.position = 'relative';
 
