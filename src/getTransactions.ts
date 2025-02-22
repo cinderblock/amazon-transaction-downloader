@@ -59,7 +59,7 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
     //         ...
     // div
     //   div.apx-transactions-sleeve-header-container (repeated for each category)
-    const transactions = await page.evaluate(OrderRegex.source, (orderRegex: string) => {
+    const transactions: Transaction[] = await page.evaluate((orderRegex: RegExp): Transaction[] => {
       const transactions: Transaction[] = [];
 
       const categoryHeaders = document.querySelectorAll('.apx-transactions-sleeve-header-container');
@@ -116,7 +116,7 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
               ]?.children[0]?.children[0]?.children[0]?.textContent?.replace(/^Order #/, '');
               const merchant = transactionElement.children[++i]?.children[0]?.children[0]?.textContent ?? '';
 
-              if (!paymentMethod || !amount || !orderNumber || !orderNumber.match(new RegExp(orderRegex))) {
+              if (!paymentMethod || !amount || !orderNumber || !orderNumber.match(orderRegex)) {
                 throw new Error(`Invalid transaction: ${paymentMethod} ${amount} ${orderNumber} ${merchant}`);
               }
 
@@ -136,7 +136,7 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
       }
 
       return transactions;
-    });
+    }, OrderRegex);
 
     // Get the next page button
     const button = await page.$('div.a-span-last input.a-button-input');
