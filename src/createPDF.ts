@@ -3,14 +3,14 @@ import { dirname, join } from 'node:path';
 import { Browser } from 'puppeteer-core';
 import printer from 'pdf-to-printer';
 import { gaussianRandom } from './gaussianRandom.js';
-import { OrderRegex } from './AmazonConstants.js';
+import { NormalOrderUrl, DigitalOrderUrl, isOrderId, isDigitalOrderId } from './AmazonConstants.js';
 const { print } = printer;
 
 const SkipPrint = false;
 const OrderDir = 'coded-orders';
 
 export async function printOrder(browser: Browser, orderNumber: string, rePrint = true) {
-  if (!orderNumber || !OrderRegex.test(orderNumber)) {
+  if (!isOrderId(orderNumber)) {
     throw new Error('Invalid order number');
   }
 
@@ -33,7 +33,9 @@ export async function printOrder(browser: Browser, orderNumber: string, rePrint 
 
   const page = await browser.newPage();
 
-  await page.goto(`${OrderUrl}${orderNumber}`, { waitUntil: 'load' });
+  const baseUrl = isDigitalOrderId(orderNumber) ? DigitalOrderUrl : NormalOrderUrl;
+
+  await page.goto(`${baseUrl}${orderNumber}`, { waitUntil: 'load' });
 
   // Wait for specific selectors to load
   await page.waitForSelector('div#pos_view_section', { timeout: 1000 });
@@ -102,8 +104,9 @@ export async function printOrder(browser: Browser, orderNumber: string, rePrint 
         stamp.style.cursor = next ? 'auto' : 'move';
       });
 
-      const posViewContent = document.querySelector('div#pos_view_content') as HTMLElement;
-      if (!posViewContent) throw new Error('No div#pos_view_content');
+      const posViewContent = (document.querySelector('div#pos_view_content') ||
+        document.querySelector('div#orderSummary')) as HTMLDivElement | null;
+      if (!posViewContent) throw new Error('No div#pos_view_content or div#orderSummary');
       posViewContent.appendChild(stamp);
       posViewContent.style.position = 'relative';
 
@@ -149,5 +152,3 @@ export async function printOrder(browser: Browser, orderNumber: string, rePrint 
 
   return labelText;
 }
-
-const OrderUrl = 'https://www.amazon.com/gp/css/summary/print.html?orderID=';
