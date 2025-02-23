@@ -135,6 +135,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
   if (autoClose) await browser.close();
 }
 
+// TODO: Make an interface for this?
 const unknownTransactions = [
 ];
 
