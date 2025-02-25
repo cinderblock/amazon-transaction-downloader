@@ -78,7 +78,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     if (transaction.status !== 'Completed') continue;
 
     // Remove orders that used known personal payment method
-    if (transaction.paymentMethod === 'Mastercard ****4798') continue;
+    if (transaction.paymentMethod === 'Mastercard ****<YOUR_CARD_NUMBER_LAST_4>') continue;
 
     // break if transaction is significantly older than oldest unknown
     if (timeDelta(oldestUnknown.date, transaction.date) > 1000 * 60 * 60 * 24 * 7) {
