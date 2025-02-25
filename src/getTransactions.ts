@@ -99,7 +99,7 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
               let i = 0;
 
               const paymentMethod = transactionElement.children[i]?.children[0]?.children[0]?.textContent;
-              const amount = transactionElement.children[i]?.children[1]?.children[0]?.textContent;
+              const amount = transactionElement.children[i]?.children[1]?.children[0]?.textContent?.replace(/^\+/, '');
 
               let status;
               if (category === 'Completed') {
@@ -113,7 +113,7 @@ export async function* getTransactions(page: Page): AsyncGenerator<Transaction, 
 
               const orderNumber = transactionElement.children[
                 ++i
-              ]?.children[0]?.children[0]?.children[0]?.textContent?.replace(/^Order #/, '');
+              ]?.children[0]?.children[0]?.children[0]?.textContent?.replace(/^(Refund: )?Order #/, '');
               const merchant = transactionElement.children[++i]?.children[0]?.children[0]?.textContent ?? '';
 
               if (!paymentMethod || !amount || !orderNumber || !orderNumber.match(new RegExp(orderRegex))) {
