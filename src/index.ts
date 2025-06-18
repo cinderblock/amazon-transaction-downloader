@@ -54,6 +54,8 @@ async function main(unknownTransactions: UnknownTransaction[]) {
 
   const oldestUnknown = unknownTransactions.sort((a, b) => timeDelta(a.date, b.date))[0];
 
+  console.log(`Oldest unknown transaction: ${oldestUnknown.date} ${oldestUnknown.amount}`);
+
   // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({
     executablePath: await getChromePath(),
@@ -113,6 +115,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
 
     // Remove transactions that are from an order that has already been processed
     if (processedOrders.includes(transaction.orderNumber)) {
+      console.log(`Skipping duplicate order: ${transaction.orderNumber}`);
       continue;
     }
 
