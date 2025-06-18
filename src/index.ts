@@ -8,6 +8,8 @@ import { join } from 'node:path';
 
 const AutoClose = true;
 const UserDataDir = 'user-data';
+const RePrint = false;
+const PrinterName = 'TSL WorkCentre 6515 PS';
 
 function areDatesClose(date1: string | Date, date2: string | Date, days = 4) {
   const maxTimeDelta = 1000 * 60 * 60 * 24 * days;
@@ -120,7 +122,9 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     // Log the match
     console.log(`Matched ${transaction.orderNumber} with ${date}: ${amount}`);
 
-    await printOrder(browser, transaction.orderNumber, false).catch(e => console.error(e));
+    const isRefund = amount.startsWith('-');
+
+    await printOrder(browser, transaction.orderNumber, RePrint || isRefund, PrinterName).catch(e => console.error(e));
   }
 
   console.log(`Unmatched transactions: ${unknownTransactions.length}`);

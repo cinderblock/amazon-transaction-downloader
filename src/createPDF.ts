@@ -9,7 +9,7 @@ const { print } = printer;
 const SkipPrint = false;
 const OrderDir = 'coded-orders';
 
-export async function printOrder(browser: Browser, orderNumber: string, rePrint = true) {
+export async function printOrder(browser: Browser, orderNumber: string, rePrint = true, printer?: string) {
   if (!isOrderId(orderNumber)) {
     throw new Error('Invalid order number');
   }
@@ -19,7 +19,7 @@ export async function printOrder(browser: Browser, orderNumber: string, rePrint 
   function doPrint() {
     if (SkipPrint) return;
 
-    void print(path).catch(e => {
+    void print(path, { printer }).catch(e => {
       console.error(`Error printing ${path}`);
       console.error(e);
     });
