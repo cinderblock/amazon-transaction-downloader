@@ -143,7 +143,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
 }
 
 // TODO: Make an interface for this?
-const unknownTransactions = [
+const unknownTransactions: UnknownTransaction[] = [
 ];
 
 if (esMain(import.meta)) {
