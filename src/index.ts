@@ -6,8 +6,8 @@ import { absTimeDelta, timeDelta } from './timeDelta.js';
 import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const autoClose = true;
-const userDataDir = 'user-data';
+const AutoClose = true;
+const UserDataDir = 'user-data';
 
 function areDatesClose(date1: string | Date, date2: string | Date, days = 4) {
   const maxTimeDelta = 1000 * 60 * 60 * 24 * days;
@@ -56,7 +56,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
   const browser = await puppeteer.launch({
     executablePath: await getChromePath(),
     headless: false,
-    userDataDir,
+    userDataDir: UserDataDir,
     defaultViewport: null,
     protocolTimeout: 2e9,
     args: ['--hide-crash-restore-bubble'],
@@ -132,7 +132,7 @@ async function main(unknownTransactions: UnknownTransaction[]) {
     );
   }
 
-  if (autoClose) await browser.close();
+  if (AutoClose) await browser.close();
 }
 
 // TODO: Make an interface for this?
