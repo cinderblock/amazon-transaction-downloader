@@ -8,8 +8,14 @@ const { print } = printer;
 
 const SkipPrint = false;
 const OrderDir = 'coded-orders';
+type ReturnData = string;
 
-export async function printOrder(browser: Browser, orderNumber: string, rePrint = true, printer?: string) {
+export async function printOrder(
+  browser: Browser,
+  orderNumber: string,
+  rePrint = true,
+  printer?: string,
+): Promise<ReturnData | undefined> {
   if (!isOrderId(orderNumber)) {
     throw new Error('Invalid order number');
   }
