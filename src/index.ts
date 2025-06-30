@@ -127,7 +127,13 @@ async function main(unknownTransactions: UnknownTransaction[]) {
 
     const isRefund = amount.startsWith('-');
 
-    await printOrder(browser, transaction.orderNumber, RePrint || isRefund, PrinterName).catch(e => console.error(e));
+    const err = await printOrder(browser, transaction.orderNumber, RePrint || isRefund, PrinterName)
+      .then(() => false)
+      .catch(e => {
+        console.error(e);
+        return true;
+      });
+    if (err) return;
   }
 
   console.log(`Unmatched transactions: ${unknownTransactions.length}`);
@@ -152,9 +158,5 @@ if (esMain(import.meta)) {
     if (!process.exitCode) {
       process.exitCode = 1;
     }
-
-    setTimeout(() => {
-      process.exit(-1);
-    }, 100).unref();
   });
 }
