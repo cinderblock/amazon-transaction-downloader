@@ -55,7 +55,7 @@ export async function printOrder(
   const labelText = await page.evaluate(
     async (randoms, selectors, digitalOrder) => {
       const posViewContent = document.querySelector(selectors[0]) as HTMLDivElement | null;
-      if (!posViewContent) throw new Error('No div#pos_view_content or div.orderSummary');
+      if (!posViewContent) throw new Error(`No ${selectors[0]} found`);
 
       const stamp = document.createElement('div');
       stamp.style.position = 'absolute';
