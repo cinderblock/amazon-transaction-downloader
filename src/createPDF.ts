@@ -49,7 +49,7 @@ export async function printOrder(
   // Wait for specific selectors to load
   const found = await Promise.all(selectors.map(sel => page.waitForSelector(sel, { timeout: 1000 }).catch(() => {})));
 
-  if (!found) throw new Error('Failed to find expected content');
+  if (!found.some(Boolean)) throw new Error('Failed to find expected content');
 
   // A place to add a stamp to the page with some message
   const labelText = await page.evaluate(
