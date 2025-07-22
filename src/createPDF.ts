@@ -53,7 +53,7 @@ export async function printOrder(
 
   // A place to add a stamp to the page with some message
   const labelText = await page.evaluate(
-    async randoms => {
+    async (randoms, selectors, digitalOrder) => {
       const posViewContent = document.querySelector(selectors[0]) as HTMLDivElement | null;
       if (!posViewContent) throw new Error('No div#pos_view_content or div.orderSummary');
 
@@ -145,6 +145,8 @@ export async function printOrder(
       return stamp.innerText;
     },
     Array.from({ length: 3 }, gaussianRandom),
+    selectors,
+    digitalOrder,
   );
 
   console.log(`Order ${orderNumber} is ${labelText.replaceAll('\n', ' ')}`);
