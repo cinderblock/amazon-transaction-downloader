@@ -42,24 +42,38 @@ export async function printOrder(
   const digitalOrder = isDigitalOrderId(orderNumber);
 
   const baseUrl = digitalOrder ? DigitalOrderUrl : NormalOrderUrl;
-  const selectors = digitalOrder ? ['div.orderSummary', 'div#orderDetails'] : ['div#orderDetails', 'div#od-subtotals'];
+  const timeout = 5000;
 
   await page.goto(`${baseUrl}${orderNumber}`, { waitUntil: 'load' });
 
-  // Wait for specific selectors to load
-  const found = await Promise.all(selectors.map(sel => page.waitForSelector(sel, { timeout: 1000 }).catch(() => {})));
+  let selector = '';
+  let isFresh = false;
 
-  if (!found.some(Boolean)) throw new Error('Failed to find expected content');
+  if (digitalOrder) {
+    selector = 'div.orderSummary';
+    isFresh = false;
+
+    const found = await page.waitForSelector(selector, { timeout }).catch(() => {});
+    if (!found) throw new Error('Failed to find expected content for digital order');
+  } else {
+    const possibleSelectors = ['div#orderDetails', 'div#order-summary'];
+    const found = await Promise.any(
+      possibleSelectors.map(sel => page.waitForSelector(sel, { timeout }).then(s => sel)),
+    ).catch(() => {});
+    if (!found) throw new Error('Failed to find expected content for normal order');
+    selector = found;
+    isFresh = found === 'div#order-summary';
+  }
 
   // A place to add a stamp to the page with some message
   const labelText = await page.evaluate(
-    async (randoms, selectors, digitalOrder) => {
-      const posViewContent = document.querySelector(selectors[0]) as HTMLDivElement | null;
-      if (!posViewContent) throw new Error(`No ${selectors[0]} found`);
+    async (randoms, selector, bottomOffset) => {
+      const posViewContent = document.querySelector(selector) as HTMLDivElement | null;
+      if (!posViewContent) throw new Error(`No ${selector} found`);
 
       const stamp = document.createElement('div');
       stamp.style.position = 'absolute';
-      stamp.style.bottom = `${(!digitalOrder ? 300 : -200) + 10 * randoms[0]}px`;
+      stamp.style.bottom = `${bottomOffset + 10 * randoms[0]}px`;
       stamp.style.right = `${30 + 3 * randoms[1]}px`;
       stamp.style.color = 'red';
       stamp.style.opacity = '0.7';
@@ -145,8 +159,8 @@ export async function printOrder(
       return stamp.innerText;
     },
     Array.from({ length: 3 }, gaussianRandom),
-    selectors,
-    digitalOrder,
+    selector,
+    !digitalOrder ? 300 : -200,
   );
 
   console.log(`Order ${orderNumber} is ${labelText.replaceAll('\n', ' ')}`);
