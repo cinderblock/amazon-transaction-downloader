@@ -47,11 +47,9 @@ export async function printOrder(
   await page.goto(`${baseUrl}${orderNumber}`, { waitUntil: 'load' });
 
   let selector = '';
-  let isFresh = false;
 
   if (digitalOrder) {
     selector = 'div.orderSummary';
-    isFresh = false;
 
     const found = await page.waitForSelector(selector, { timeout }).catch(() => {});
     if (!found) throw new Error('Failed to find expected content for digital order');
@@ -61,8 +59,8 @@ export async function printOrder(
       possibleSelectors.map(sel => page.waitForSelector(sel, { timeout }).then(s => sel)),
     ).catch(() => {});
     if (!found) throw new Error('Failed to find expected content for normal order');
+    // 'div#order-summary' is the layout Amazon Fresh orders use
     selector = found;
-    isFresh = found === 'div#order-summary';
   }
 
   // A place to add a stamp to the page with some message
